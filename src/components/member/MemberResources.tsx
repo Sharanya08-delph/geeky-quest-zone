@@ -26,21 +26,25 @@ const MemberResources = () => {
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(r => (
-          <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" className="glass-card-hover p-5 block group">
-            <div className="flex items-center gap-2 text-primary mb-2">
-              {categoryIcons[r.category]}
-              <span className="text-xs font-medium uppercase">{r.category}</span>
-            </div>
-            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{r.title}</h3>
-            <p className="text-sm text-muted-foreground mt-2">{r.description}</p>
-            <div className="flex items-center gap-1 text-xs text-primary mt-3">
-              <ExternalLink size={12} /> Open Resource
-            </div>
-          </a>
-        ))}
-      </div>
+      {filtered.length === 0 ? (
+        <p className="text-muted-foreground text-center py-8">No resources available yet.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map(r => (
+            <a key={r.id} href={r.url || "#"} target="_blank" rel="noopener noreferrer" className="glass-card-hover p-5 block group">
+              <div className="flex items-center gap-2 text-primary mb-2">
+                {categoryIcons[r.category || "link"]}
+                <span className="text-xs font-medium uppercase">{r.category || r.type}</span>
+              </div>
+              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{r.title}</h3>
+              <p className="text-sm text-muted-foreground mt-2">{r.description}</p>
+              <div className="flex items-center gap-1 text-xs text-primary mt-3">
+                <ExternalLink size={12} /> Open Resource
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

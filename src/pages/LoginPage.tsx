@@ -3,22 +3,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import gfgLogo from "@/assets/gfg-logo.svg";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, User, Shield } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, ArrowLeft, User, Shield, Loader2 } from "lucide-react";
 
 const LoginPage = () => {
-  const { login, register } = useAuth();
+  const { login, register, user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [role, setRole] = useState<"member" | "admin">("member");
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  // Login fields
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Register fields
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPhone, setRegPhone] = useState("");
@@ -28,27 +27,38 @@ const LoginPage = () => {
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Redirect if already logged in
+  React.useEffect(() => {
+    if (user && !authLoading) {
+      navigate(isAdmin ? "/admin" : "/dashboard");
+    }
+  }, [user, isAdmin, authLoading]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const success = login(loginEmail, loginPassword, role);
-    if (success) {
-      navigate(role === "admin" ? "/admin" : "/dashboard");
-    } else {
-      setError(role === "admin" ? "Access denied. Only authorized club leads can access admin panel." : "Invalid email or password.");
+    setSubmitting(true);
+    const { error } = await login(loginEmail, loginPassword);
+    if (error) {
+      setError(error);
+      setSubmitting(false);
     }
+    // Navigation handled by useEffect
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (regPassword.length < 6) { setError("Password must be at least 6 characters."); return; }
     if (regPassword !== regConfirmPassword) { setError("Passwords do not match."); return; }
-    const success = register({ name: regName, email: regEmail, phone: regPhone, department: regDept, year: regYear, registerNumber: regRegNo, role: "member" }, regPassword);
-    if (success) {
-      navigate("/dashboard");
-    } else {
-      setError("Email already registered.");
+    setSubmitting(true);
+    const { error } = await register(
+      { name: regName, email: regEmail, phone: regPhone, department: regDept, year: regYear, registerNumber: regRegNo },
+      regPassword
+    );
+    if (error) {
+      setError(error);
+      setSubmitting(false);
     }
   };
 
@@ -60,9 +70,16 @@ const LoginPage = () => {
     setStep(s => s + 1);
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background grid-bg flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background grid-bg flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Ambient glow */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
 
@@ -72,14 +89,12 @@ const LoginPage = () => {
         transition={{ duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }}
         className="glass-card p-8 md:p-10 w-full max-w-md relative z-10"
       >
-        {/* Logo & Title */}
         <div className="flex flex-col items-center mb-8">
           <img src={gfgLogo} alt="GeeksforGeeks Logo" className="h-12 mb-4" />
           <h1 className="text-2xl font-bold gradient-text">GFG Campus Club</h1>
           <p className="text-muted-foreground text-sm mt-1">Rajalakshmi Institute of Technology</p>
         </div>
 
-        {/* Mode Tabs */}
         <div className="flex rounded-lg bg-muted p-1 mb-6">
           <button onClick={() => { setMode("login"); setError(""); }} className={`flex-1 py-2 rounded-md text-sm font-medium transition-all duration-200 ${mode === "login" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
             Login
@@ -99,16 +114,6 @@ const LoginPage = () => {
 
         {mode === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4">
-            {/* Role Toggle */}
-            <div className="flex gap-3 mb-2">
-              <button type="button" onClick={() => setRole("member")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border transition-all duration-200 ${role === "member" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
-                <User size={16} /> Member
-              </button>
-              <button type="button" onClick={() => setRole("admin")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border transition-all duration-200 ${role === "admin" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
-                <Shield size={16} /> Admin
-              </button>
-            </div>
-
             <div>
               <label className="text-sm text-muted-foreground mb-1 block">Email</label>
               <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="your@email.com" className="input-field" required />
@@ -122,19 +127,12 @@ const LoginPage = () => {
                 </button>
               </div>
             </div>
-            <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2">
-              Login <ArrowRight size={16} />
+            <button type="submit" disabled={submitting} className="btn-primary w-full flex items-center justify-center gap-2">
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <>Login <ArrowRight size={16} /></>}
             </button>
-
-            {role === "admin" && (
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Only authorized club leads can access the admin panel.
-              </p>
-            )}
           </form>
         ) : (
           <form onSubmit={handleRegister} className="space-y-4">
-            {/* Step Indicator */}
             <div className="flex items-center justify-center gap-2 mb-4">
               {[1, 2, 3].map(s => (
                 <div key={s} className={`h-1.5 rounded-full transition-all duration-300 ${s <= step ? "bg-primary w-10" : "bg-muted w-6"}`} />
@@ -201,19 +199,13 @@ const LoginPage = () => {
                   Next <ArrowRight size={16} />
                 </button>
               ) : (
-                <button type="submit" className="btn-primary flex-1 flex items-center justify-center gap-2">
-                  Join the Club <ArrowRight size={16} />
+                <button type="submit" disabled={submitting} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <>Join the Club <ArrowRight size={16} /></>}
                 </button>
               )}
             </div>
           </form>
         )}
-
-        {/* Demo credentials */}
-        <div className="mt-6 pt-4 border-t border-border">
-          <p className="text-xs text-muted-foreground text-center">Demo: <span className="font-mono text-primary">lead.gfgrit@gmail.com</span> / <span className="font-mono text-primary">admin123</span></p>
-          <p className="text-xs text-muted-foreground text-center mt-1">Member: <span className="font-mono text-primary">priya@gfg.com</span> / <span className="font-mono text-primary">member123</span></p>
-        </div>
       </motion.div>
     </div>
   );
