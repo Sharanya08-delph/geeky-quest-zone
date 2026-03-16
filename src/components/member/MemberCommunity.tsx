@@ -11,17 +11,17 @@ const MemberCommunity = () => {
   const [replyContent, setReplyContent] = useState<Record<string, string>>({});
   const [showNewPost, setShowNewPost] = useState(false);
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!user || !newTitle.trim() || !newContent.trim()) return;
-    addForumPost({ authorId: user.id, authorName: user.name, title: newTitle, content: newContent, date: new Date().toISOString().split("T")[0], replies: [], likes: 0 });
+    await addForumPost({ title: newTitle, content: newContent });
     setNewTitle("");
     setNewContent("");
     setShowNewPost(false);
   };
 
-  const handleReply = (postId: string) => {
+  const handleReply = async (postId: string) => {
     if (!user || !replyContent[postId]?.trim()) return;
-    addReply(postId, { authorId: user.id, authorName: user.name, content: replyContent[postId], date: new Date().toISOString().split("T")[0] });
+    await addReply(postId, replyContent[postId]);
     setReplyContent(prev => ({ ...prev, [postId]: "" }));
   };
 
@@ -41,48 +41,52 @@ const MemberCommunity = () => {
       )}
 
       <div className="space-y-4">
-        {forumPosts.map(post => (
-          <div key={post.id} className="glass-card-hover p-5 space-y-3">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-bold">{post.authorName.charAt(0)}</div>
-                  <div>
-                    <span className="font-medium text-foreground text-sm">{post.authorName}</span>
-                    <span className="text-xs text-muted-foreground ml-2">{post.date}</span>
+        {forumPosts.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">No posts yet. Start the discussion!</p>
+        ) : (
+          forumPosts.map(post => (
+            <div key={post.id} className="glass-card-hover p-5 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-bold">{(post.author_name || "?").charAt(0)}</div>
+                    <div>
+                      <span className="font-medium text-foreground text-sm">{post.author_name || "Unknown"}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{new Date(post.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
+                  <h3 className="font-semibold text-foreground mt-2">{post.title}</h3>
                 </div>
-                <h3 className="font-semibold text-foreground mt-2">{post.title}</h3>
+                <span className="flex items-center gap-1 text-sm text-muted-foreground"><ThumbsUp size={14} /> {post.likes || 0}</span>
               </div>
-              <span className="flex items-center gap-1 text-sm text-muted-foreground"><ThumbsUp size={14} /> {post.likes}</span>
-            </div>
-            <p className="text-sm text-muted-foreground">{post.content}</p>
+              <p className="text-sm text-muted-foreground">{post.content}</p>
 
-            {post.replies.length > 0 && (
-              <div className="ml-6 space-y-2 border-l-2 border-border pl-4">
-                {post.replies.map((reply, i) => (
-                  <div key={i} className="text-sm">
-                    <span className="font-medium text-foreground">{reply.authorName}</span>
-                    <span className="text-muted-foreground ml-2">{reply.content}</span>
-                  </div>
-                ))}
+              {post.replies && post.replies.length > 0 && (
+                <div className="ml-6 space-y-2 border-l-2 border-border pl-4">
+                  {post.replies.map((reply) => (
+                    <div key={reply.id} className="text-sm">
+                      <span className="font-medium text-foreground">{reply.author_name || "Unknown"}</span>
+                      <span className="text-muted-foreground ml-2">{reply.content}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <input
+                  value={replyContent[post.id] || ""}
+                  onChange={e => setReplyContent(prev => ({ ...prev, [post.id]: e.target.value }))}
+                  placeholder="Write a reply..."
+                  className="input-field text-sm py-2"
+                  onKeyDown={e => e.key === "Enter" && handleReply(post.id)}
+                />
+                <button onClick={() => handleReply(post.id)} className="px-3 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                  <Send size={16} />
+                </button>
               </div>
-            )}
-
-            <div className="flex gap-2">
-              <input
-                value={replyContent[post.id] || ""}
-                onChange={e => setReplyContent(prev => ({ ...prev, [post.id]: e.target.value }))}
-                placeholder="Write a reply..."
-                className="input-field text-sm py-2"
-                onKeyDown={e => e.key === "Enter" && handleReply(post.id)}
-              />
-              <button onClick={() => handleReply(post.id)} className="px-3 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                <Send size={16} />
-              </button>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

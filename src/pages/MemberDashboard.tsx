@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import gfgLogo from "@/assets/gfg-logo.svg";
 import {
   LayoutGrid, Calendar, BookOpen, Terminal, Trophy, MessagesSquare, Bot,
-  Bell, Search, LogOut, User, ChevronDown, Menu, X
+  Bell, Search, LogOut, User, ChevronDown, Menu, X, Coins, Loader2
 } from "lucide-react";
 import MemberHome from "@/components/member/MemberHome";
 import MemberEvents from "@/components/member/MemberEvents";
@@ -27,12 +27,20 @@ const tabs = [
 ];
 
 const MemberDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
   const [showProfile, setShowProfile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background grid-bg flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
 
   if (!user) { navigate("/"); return null; }
 
@@ -52,7 +60,6 @@ const MemberDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background grid-bg flex">
-      {/* Sidebar */}
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 240 : 0, opacity: sidebarOpen ? 1 : 0 }}
@@ -80,16 +87,14 @@ const MemberDashboard = () => {
         </nav>
 
         <div className="p-3 border-t border-border">
-          <button onClick={() => { logout(); navigate("/"); }} className="sidebar-nav-item w-full text-left text-muted-foreground hover:text-destructive">
+          <button onClick={async () => { await logout(); navigate("/"); }} className="sidebar-nav-item w-full text-left text-muted-foreground hover:text-destructive">
             <LogOut size={18} />
             <span>Logout</span>
           </button>
         </div>
       </motion.aside>
 
-      {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? "ml-[240px]" : "ml-0"}`}>
-        {/* Top Bar */}
         <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-muted-foreground hover:text-foreground">
@@ -102,6 +107,13 @@ const MemberDashboard = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Points display */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+              <Coins size={16} className="text-primary" />
+              <span className="font-mono font-bold text-sm text-primary">{profile?.points || 0}</span>
+              <span className="text-xs text-muted-foreground">pts</span>
+            </div>
+
             <button className="relative text-muted-foreground hover:text-foreground">
               <Bell size={20} />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full" />
@@ -110,9 +122,9 @@ const MemberDashboard = () => {
             <div className="relative">
               <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="flex items-center gap-2 text-sm">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-                  {user.name.charAt(0)}
+                  {profile?.name?.charAt(0) || "?"}
                 </div>
-                <span className="hidden md:block text-foreground">{user.name}</span>
+                <span className="hidden md:block text-foreground">{profile?.name || "User"}</span>
                 <ChevronDown size={14} className="text-muted-foreground" />
               </button>
 
@@ -121,7 +133,7 @@ const MemberDashboard = () => {
                   <button onClick={() => { setShowProfile(true); setShowProfileDropdown(false); }} className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent flex items-center gap-2">
                     <User size={14} /> View Profile
                   </button>
-                  <button onClick={() => { logout(); navigate("/"); }} className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent flex items-center gap-2 text-destructive">
+                  <button onClick={async () => { await logout(); navigate("/"); }} className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-accent flex items-center gap-2 text-destructive">
                     <LogOut size={14} /> Logout
                   </button>
                 </div>
@@ -130,7 +142,6 @@ const MemberDashboard = () => {
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 p-6 overflow-y-auto">
           <motion.div
             key={showProfile ? "profile" : activeTab}

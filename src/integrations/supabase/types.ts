@@ -14,16 +14,419 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      announcements: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          priority: string
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          priority?: string
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          priority?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      event_registrations: {
+        Row: {
+          created_at: string
+          department: string | null
+          email: string
+          event_id: string
+          id: string
+          name: string
+          phone: string | null
+          user_id: string
+          year: string | null
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          email: string
+          event_id: string
+          id?: string
+          name: string
+          phone?: string | null
+          user_id: string
+          year?: string | null
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          email?: string
+          event_id?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          user_id?: string
+          year?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string | null
+          id: string
+          max_participants: number | null
+          status: string
+          time: string | null
+          title: string
+          type: string
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date: string
+          description?: string | null
+          id?: string
+          max_participants?: number | null
+          status?: string
+          time?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          max_participants?: number | null
+          status?: string
+          time?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
+      forum_posts: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          likes: number | null
+          tags: string[] | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          likes?: number | null
+          tags?: string[] | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          likes?: number | null
+          tags?: string[] | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      forum_replies: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_replies_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      peer_challenges: {
+        Row: {
+          bet_amount: number
+          challenged_id: string
+          challenged_submitted_at: string | null
+          challenger_id: string
+          challenger_submitted_at: string | null
+          created_at: string
+          id: string
+          problem_id: string
+          status: string
+          winner_id: string | null
+        }
+        Insert: {
+          bet_amount?: number
+          challenged_id: string
+          challenged_submitted_at?: string | null
+          challenger_id: string
+          challenger_submitted_at?: string | null
+          created_at?: string
+          id?: string
+          problem_id: string
+          status?: string
+          winner_id?: string | null
+        }
+        Update: {
+          bet_amount?: number
+          challenged_id?: string
+          challenged_submitted_at?: string | null
+          challenger_id?: string
+          challenger_submitted_at?: string | null
+          created_at?: string
+          id?: string
+          problem_id?: string
+          status?: string
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "peer_challenges_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      problem_submissions: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          language: string
+          points_earned: number
+          problem_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          language?: string
+          points_earned?: number
+          problem_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          language?: string
+          points_earned?: number
+          problem_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_submissions_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      problems: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string
+          difficulty: string
+          examples: Json | null
+          id: string
+          points: number
+          test_cases: Json | null
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description: string
+          difficulty?: string
+          examples?: Json | null
+          id?: string
+          points?: number
+          test_cases?: Json | null
+          title: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string
+          difficulty?: string
+          examples?: Json | null
+          id?: string
+          points?: number
+          test_cases?: Json | null
+          title?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          department: string | null
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          points: number
+          register_number: string | null
+          updated_at: string
+          user_id: string
+          year: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          points?: number
+          register_number?: string | null
+          updated_at?: string
+          user_id: string
+          year?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          points?: number
+          register_number?: string | null
+          updated_at?: string
+          user_id?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
+      resources: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          title: string
+          type: string
+          url: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          title: string
+          type?: string
+          url?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+          type?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +553,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "member"],
+    },
   },
 } as const

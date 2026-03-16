@@ -1,33 +1,35 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
-export interface User {
+export interface Profile {
   id: string;
+  user_id: string;
   name: string;
   email: string;
-  phone: string;
-  department: string;
-  year: string;
-  registerNumber: string;
-  role: "member" | "admin";
-  avatar?: string;
-  problemsSolved: number;
-  eventsAttended: number;
-  rank: number;
-  streak: number;
-  badges: string[];
-  joinedDate: string;
+  phone: string | null;
+  department: string | null;
+  year: string | null;
+  register_number: string | null;
+  points: number;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
-  user: User | null;
-  users: User[];
-  login: (email: string, password: string, role: "member" | "admin") => boolean;
-  register: (userData: Omit<User, "id" | "problemsSolved" | "eventsAttended" | "rank" | "streak" | "badges" | "joinedDate">, password: string) => boolean;
-  logout: () => void;
-  updateUser: (data: Partial<User>) => void;
+  user: SupabaseUser | null;
+  profile: Profile | null;
+  profiles: Profile[];
+  session: Session | null;
+  isAdmin: boolean;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<{ error: string | null }>;
+  register: (userData: { name: string; email: string; phone: string; department: string; year: string; registerNumber: string }, password: string) => Promise<{ error: string | null }>;
+  logout: () => Promise<void>;
+  updateProfile: (data: Partial<Profile>) => Promise<void>;
+  refreshProfiles: () => Promise<void>;
 }
-
-const ADMIN_EMAILS = ["lead.gfgrit@gmail.com", "admin.rit@gfg.com"];
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -37,101 +39,113 @@ export const useAuth = () => {
   return ctx;
 };
 
-const MOCK_USERS: (User & { password: string })[] = [
-  {
-    id: "1", name: "Arun Kumar", email: "lead.gfgrit@gmail.com", phone: "9876543210",
-    department: "CSE", year: "3rd", registerNumber: "RA2111003010001", role: "admin",
-    problemsSolved: 342, eventsAttended: 15, rank: 1, streak: 45, password: "admin123",
-    badges: ["DSA Master", "Contest Winner", "Mentor"], joinedDate: "2024-01-15",
-  },
-  {
-    id: "2", name: "Priya Sharma", email: "priya@gfg.com", phone: "9876543211",
-    department: "ECE", year: "2nd", registerNumber: "RA2111003010002", role: "member",
-    problemsSolved: 156, eventsAttended: 8, rank: 5, streak: 12, password: "member123",
-    badges: ["Problem Solver", "Active Member"], joinedDate: "2024-03-10",
-  },
-  {
-    id: "3", name: "Rahul Dev", email: "rahul@gfg.com", phone: "9876543212",
-    department: "IT", year: "4th", registerNumber: "RA2111003010003", role: "member",
-    problemsSolved: 289, eventsAttended: 12, rank: 2, streak: 30, password: "member123",
-    badges: ["DSA Pro", "Hackathon Winner", "Streak Master"], joinedDate: "2024-02-20",
-  },
-  {
-    id: "4", name: "Sneha Patel", email: "sneha@gfg.com", phone: "9876543213",
-    department: "CSE", year: "3rd", registerNumber: "RA2111003010004", role: "member",
-    problemsSolved: 210, eventsAttended: 10, rank: 3, streak: 22, password: "member123",
-    badges: ["Consistent Coder", "Event Star"], joinedDate: "2024-01-25",
-  },
-  {
-    id: "5", name: "Vikash Singh", email: "vikash@gfg.com", phone: "9876543214",
-    department: "MECH", year: "2nd", registerNumber: "RA2111003010005", role: "member",
-    problemsSolved: 98, eventsAttended: 5, rank: 8, streak: 7, password: "member123",
-    badges: ["Beginner"], joinedDate: "2024-06-01",
-  },
-];
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [allUsers, setAllUsers] = useState<(User & { password: string })[]>(() => {
-    const stored = localStorage.getItem("gfg_users");
-    return stored ? JSON.parse(stored) : MOCK_USERS;
-  });
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (data) setProfile(data as Profile);
+    return data as Profile | null;
+  };
+
+  const checkAdmin = async (userId: string) => {
+    const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+    setIsAdmin(!!data);
+  };
+
+  const refreshProfiles = async () => {
+    const { data } = await supabase.from("profiles").select("*").order("points", { ascending: false });
+    if (data) setProfiles(data as Profile[]);
+  };
 
   useEffect(() => {
-    const stored = localStorage.getItem("gfg_current_user");
-    if (stored) setUser(JSON.parse(stored));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        // Use setTimeout to avoid Supabase auth deadlock
+        setTimeout(async () => {
+          await fetchProfile(session.user.id);
+          await checkAdmin(session.user.id);
+          await refreshProfiles();
+          setLoading(false);
+        }, 0);
+      } else {
+        setProfile(null);
+        setIsAdmin(false);
+        setProfiles([]);
+        setLoading(false);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id).then(() => {
+          checkAdmin(session.user.id);
+          refreshProfiles();
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("gfg_users", JSON.stringify(allUsers));
-  }, [allUsers]);
-
-  const login = (email: string, password: string, role: "member" | "admin"): boolean => {
-    if (role === "admin" && !ADMIN_EMAILS.includes(email)) return false;
-    const found = allUsers.find(u => u.email === email && u.password === password);
-    if (!found) return false;
-    const { password: _, ...userData } = found;
-    const loggedIn = { ...userData, role };
-    setUser(loggedIn);
-    localStorage.setItem("gfg_current_user", JSON.stringify(loggedIn));
-    return true;
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: error.message };
+    return { error: null };
   };
 
-  const register = (userData: Omit<User, "id" | "problemsSolved" | "eventsAttended" | "rank" | "streak" | "badges" | "joinedDate">, password: string): boolean => {
-    if (allUsers.some(u => u.email === userData.email)) return false;
-    const newUser = {
-      ...userData,
-      id: Date.now().toString(),
-      problemsSolved: 0,
-      eventsAttended: 0,
-      rank: allUsers.length + 1,
-      streak: 0,
-      badges: ["New Member"],
-      joinedDate: new Date().toISOString().split("T")[0],
+  const register = async (userData: { name: string; email: string; phone: string; department: string; year: string; registerNumber: string }, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email: userData.email,
       password,
-    };
-    setAllUsers(prev => [...prev, newUser]);
-    const { password: _, ...safe } = newUser;
-    setUser(safe);
-    localStorage.setItem("gfg_current_user", JSON.stringify(safe));
-    return true;
+      options: {
+        data: {
+          name: userData.name,
+          phone: userData.phone,
+          department: userData.department,
+          year: userData.year,
+          register_number: userData.registerNumber,
+        },
+      },
+    });
+    if (error) return { error: error.message };
+    return { error: null };
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("gfg_current_user");
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
-  const updateUser = (data: Partial<User>) => {
+  const updateProfile = async (data: Partial<Profile>) => {
     if (!user) return;
-    const updated = { ...user, ...data };
-    setUser(updated);
-    localStorage.setItem("gfg_current_user", JSON.stringify(updated));
-    setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...data } : u));
+    const { error } = await supabase
+      .from("profiles")
+      .update(data)
+      .eq("user_id", user.id);
+    if (!error) {
+      await fetchProfile(user.id);
+      await refreshProfiles();
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, users: allUsers.map(({ password, ...u }) => u), login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, profile, profiles, session, isAdmin, loading, login, register, logout, updateProfile, refreshProfiles }}>
       {children}
     </AuthContext.Provider>
   );

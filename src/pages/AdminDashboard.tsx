@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import gfgLogo from "@/assets/gfg-logo.svg";
 import {
   LayoutGrid, Calendar, Users, BookOpen, Megaphone, Trophy, BarChart3,
-  FileText, LogOut, Menu, X, Bell, Search
+  FileText, LogOut, Menu, X, Bell, Loader2
 } from "lucide-react";
 import AdminHome from "@/components/admin/AdminHome";
 import AdminEvents from "@/components/admin/AdminEvents";
@@ -27,15 +27,21 @@ const tabs = [
   { id: "content", label: "Content", icon: FileText },
 ];
 
-const ADMIN_EMAILS = ["lead.gfgrit@gmail.com", "admin.rit@gfg.com"];
-
 const AdminDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, profile, isAdmin, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  if (!user || !ADMIN_EMAILS.includes(user.email)) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background grid-bg flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
     navigate("/");
     return null;
   }
@@ -83,7 +89,7 @@ const AdminDashboard = () => {
         </nav>
 
         <div className="p-3 border-t border-border">
-          <button onClick={() => { logout(); navigate("/"); }} className="sidebar-nav-item w-full text-left text-muted-foreground hover:text-destructive">
+          <button onClick={async () => { await logout(); navigate("/"); }} className="sidebar-nav-item w-full text-left text-muted-foreground hover:text-destructive">
             <LogOut size={18} />
             <span>Logout</span>
           </button>
@@ -101,7 +107,7 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-3">
             <Bell size={20} className="text-muted-foreground" />
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-              {user.name.charAt(0)}
+              {profile?.name?.charAt(0) || "A"}
             </div>
           </div>
         </header>
