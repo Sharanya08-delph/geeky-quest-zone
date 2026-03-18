@@ -116,6 +116,10 @@ const MemberDashboard = () => {
               <span className="text-xs text-muted-foreground">pts</span>
             </div>
 
+            <button onClick={toggleTheme} className="text-muted-foreground hover:text-foreground transition-colors">
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+
             <button className="relative text-muted-foreground hover:text-foreground">
               <Bell size={20} />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full" />
