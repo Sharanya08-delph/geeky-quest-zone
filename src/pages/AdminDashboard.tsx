@@ -31,6 +31,7 @@ const tabs = [
 const AdminDashboard = () => {
   const { user, profile, isAdmin, logout, loading } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("home");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
