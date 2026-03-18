@@ -3,13 +3,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import gfgLogo from "@/assets/gfg-logo.svg";
-import { Eye, EyeOff, ArrowRight, ArrowLeft, User, Shield, Loader2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, ArrowLeft, User, Shield, Loader2, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 
 const LoginPage = () => {
   const { login, register, user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [role, setRole] = useState<"member" | "admin">("member");
+  const [loginType, setLoginType] = useState<"member" | "admin">("member");
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +29,6 @@ const LoginPage = () => {
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
 
-  // Redirect if already logged in
   React.useEffect(() => {
     if (user && !authLoading) {
       navigate(isAdmin ? "/admin" : "/dashboard");
@@ -38,12 +39,20 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
+
+    if (loginType === "admin") {
+      if (loginEmail !== "ritadmin@gmail.com" || loginPassword !== "rit1234") {
+        setError("Invalid admin credentials.");
+        setSubmitting(false);
+        return;
+      }
+    }
+
     const { error } = await login(loginEmail, loginPassword);
     if (error) {
       setError(error);
       setSubmitting(false);
     }
-    // Navigation handled by useEffect
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -83,6 +92,15 @@ const LoginPage = () => {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
 
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 z-20 p-2 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground transition-colors"
+        aria-label="Toggle theme"
+      >
+        {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+      </button>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -95,7 +113,8 @@ const LoginPage = () => {
           <p className="text-muted-foreground text-sm mt-1">Rajalakshmi Institute of Technology</p>
         </div>
 
-        <div className="flex rounded-lg bg-muted p-1 mb-6">
+        {/* Mode tabs: Login / Join */}
+        <div className="flex rounded-lg bg-muted p-1 mb-4">
           <button onClick={() => { setMode("login"); setError(""); }} className={`flex-1 py-2 rounded-md text-sm font-medium transition-all duration-200 ${mode === "login" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
             Login
           </button>
@@ -103,6 +122,24 @@ const LoginPage = () => {
             Join the Club
           </button>
         </div>
+
+        {/* Login type tabs: Member / Admin */}
+        {mode === "login" && (
+          <div className="flex rounded-lg bg-muted/50 p-1 mb-6">
+            <button
+              onClick={() => { setLoginType("member"); setError(""); setLoginEmail(""); setLoginPassword(""); }}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${loginType === "member" ? "bg-card text-foreground border border-border shadow-sm" : "text-muted-foreground"}`}
+            >
+              <User size={14} /> Member
+            </button>
+            <button
+              onClick={() => { setLoginType("admin"); setError(""); setLoginEmail(""); setLoginPassword(""); }}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${loginType === "admin" ? "bg-card text-foreground border border-border shadow-sm" : "text-muted-foreground"}`}
+            >
+              <Shield size={14} /> Admin
+            </button>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           {error && (
@@ -115,8 +152,10 @@ const LoginPage = () => {
         {mode === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-sm text-muted-foreground mb-1 block">Email</label>
-              <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="your@email.com" className="input-field" required />
+              <label className="text-sm text-muted-foreground mb-1 block">
+                {loginType === "admin" ? "Admin Email" : "Email"}
+              </label>
+              <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder={loginType === "admin" ? "admin@email.com" : "your@email.com"} className="input-field" required />
             </div>
             <div>
               <label className="text-sm text-muted-foreground mb-1 block">Password</label>
@@ -128,7 +167,10 @@ const LoginPage = () => {
               </div>
             </div>
             <button type="submit" disabled={submitting} className="btn-primary w-full flex items-center justify-center gap-2">
-              {submitting ? <Loader2 size={16} className="animate-spin" /> : <>Login <ArrowRight size={16} /></>}
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <>
+                {loginType === "admin" ? "Login as Admin" : "Login"}
+                <ArrowRight size={16} />
+              </>}
             </button>
           </form>
         ) : (
@@ -154,11 +196,10 @@ const LoginPage = () => {
                   <select value={regDept} onChange={e => setRegDept(e.target.value)} className="input-field" required>
                     <option value="">Select Department</option>
                     <option value="CSE">CSE</option>
+                    <option value="CSBS">CSBS</option>
                     <option value="ECE">ECE</option>
-                    <option value="IT">IT</option>
                     <option value="MECH">MECH</option>
                     <option value="EEE">EEE</option>
-                    <option value="CIVIL">CIVIL</option>
                     <option value="AIDS">AI & DS</option>
                   </select>
                   <select value={regYear} onChange={e => setRegYear(e.target.value)} className="input-field" required>
