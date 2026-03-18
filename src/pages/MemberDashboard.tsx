@@ -5,8 +5,9 @@ import { motion } from "framer-motion";
 import gfgLogo from "@/assets/gfg-logo.svg";
 import {
   LayoutGrid, Calendar, BookOpen, Terminal, Trophy, MessagesSquare, Bot,
-  Bell, Search, LogOut, User, ChevronDown, Menu, X, Coins, Loader2
+  Bell, Search, LogOut, User, ChevronDown, Menu, X, Coins, Loader2, Sun, Moon
 } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 import MemberHome from "@/components/member/MemberHome";
 import MemberEvents from "@/components/member/MemberEvents";
 import MemberResources from "@/components/member/MemberResources";
