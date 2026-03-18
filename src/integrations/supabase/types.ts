@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_streaks: {
+        Row: {
+          id: string
+          last_active_date: string
+          longest_streak: number
+          streak_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_active_date?: string
+          longest_streak?: number
+          streak_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_active_date?: string
+          longest_streak?: number
+          streak_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_registrations: {
         Row: {
           created_at: string
