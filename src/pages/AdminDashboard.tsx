@@ -5,8 +5,9 @@ import { motion } from "framer-motion";
 import gfgLogo from "@/assets/gfg-logo.svg";
 import {
   LayoutGrid, Calendar, Users, BookOpen, Megaphone, Trophy, BarChart3,
-  FileText, LogOut, Menu, X, Bell, Loader2
+  FileText, LogOut, Menu, X, Bell, Loader2, Sun, Moon
 } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 import AdminHome from "@/components/admin/AdminHome";
 import AdminEvents from "@/components/admin/AdminEvents";
 import AdminMembers from "@/components/admin/AdminMembers";
