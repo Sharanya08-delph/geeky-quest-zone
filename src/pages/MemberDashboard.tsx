@@ -30,6 +30,7 @@ const tabs = [
 const MemberDashboard = () => {
   const { user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("home");
   const [showProfile, setShowProfile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
