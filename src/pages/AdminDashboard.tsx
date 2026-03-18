@@ -5,8 +5,9 @@ import { motion } from "framer-motion";
 import gfgLogo from "@/assets/gfg-logo.svg";
 import {
   LayoutGrid, Calendar, Users, BookOpen, Megaphone, Trophy, BarChart3,
-  FileText, LogOut, Menu, X, Bell, Loader2
+  FileText, LogOut, Menu, X, Bell, Loader2, Sun, Moon
 } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 import AdminHome from "@/components/admin/AdminHome";
 import AdminEvents from "@/components/admin/AdminEvents";
 import AdminMembers from "@/components/admin/AdminMembers";
@@ -30,6 +31,7 @@ const tabs = [
 const AdminDashboard = () => {
   const { user, profile, isAdmin, logout, loading } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("home");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -105,6 +107,9 @@ const AdminDashboard = () => {
             <h1 className="font-semibold text-foreground">Admin Control Center</h1>
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={toggleTheme} className="text-muted-foreground hover:text-foreground transition-colors">
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
             <Bell size={20} className="text-muted-foreground" />
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
               {profile?.name?.charAt(0) || "A"}

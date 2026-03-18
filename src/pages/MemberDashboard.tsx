@@ -5,8 +5,9 @@ import { motion } from "framer-motion";
 import gfgLogo from "@/assets/gfg-logo.svg";
 import {
   LayoutGrid, Calendar, BookOpen, Terminal, Trophy, MessagesSquare, Bot,
-  Bell, Search, LogOut, User, ChevronDown, Menu, X, Coins, Loader2
+  Bell, Search, LogOut, User, ChevronDown, Menu, X, Coins, Loader2, Sun, Moon
 } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 import MemberHome from "@/components/member/MemberHome";
 import MemberEvents from "@/components/member/MemberEvents";
 import MemberResources from "@/components/member/MemberResources";
@@ -29,6 +30,7 @@ const tabs = [
 const MemberDashboard = () => {
   const { user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("home");
   const [showProfile, setShowProfile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -113,6 +115,10 @@ const MemberDashboard = () => {
               <span className="font-mono font-bold text-sm text-primary">{profile?.points || 0}</span>
               <span className="text-xs text-muted-foreground">pts</span>
             </div>
+
+            <button onClick={toggleTheme} className="text-muted-foreground hover:text-foreground transition-colors">
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
 
             <button className="relative text-muted-foreground hover:text-foreground">
               <Bell size={20} />
