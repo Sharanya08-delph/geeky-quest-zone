@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,7 +33,7 @@ const LoginPage = () => {
     if (user && !authLoading) {
       navigate(isAdmin ? "/admin" : "/dashboard");
     }
-  }, [user, isAdmin, authLoading]);
+  }, [user, isAdmin, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +41,7 @@ const LoginPage = () => {
     setSubmitting(true);
 
     if (loginType === "admin") {
-      if (loginEmail !== "ritadmin@gmail.com" || loginPassword !== "rit1234") {
+      if (loginEmail !== "ritadmin@gmail.com" || loginPassword !== "rit123") {
         setError("Invalid admin credentials.");
         setSubmitting(false);
         return;
@@ -53,6 +53,8 @@ const LoginPage = () => {
       setError(error);
       setSubmitting(false);
     }
+    // Reset submitting state after a short delay for successful login
+    setTimeout(() => setSubmitting(false), 100);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -68,6 +70,14 @@ const LoginPage = () => {
     if (error) {
       setError(error);
       setSubmitting(false);
+    } else {
+      // Registration successful - auto login and redirect
+      const { error: loginError } = await login(regEmail, regPassword);
+      if (loginError) {
+        setError(loginError);
+        setSubmitting(false);
+      }
+      // Navigation will happen via useEffect after successful login
     }
   };
 
@@ -155,7 +165,7 @@ const LoginPage = () => {
               <label className="text-sm text-muted-foreground mb-1 block">
                 {loginType === "admin" ? "Admin Email" : "Email"}
               </label>
-              <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder={loginType === "admin" ? "admin@email.com" : "your@email.com"} className="input-field" required />
+              <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="Email ID" className="input-field" required />
             </div>
             <div>
               <label className="text-sm text-muted-foreground mb-1 block">Password</label>

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
-import type { Json } from "@/integrations/supabase/types";
+
+export type Json = any;
 
 export interface Event {
   id: string;
@@ -42,39 +42,27 @@ export interface Resource {
   id: string;
   title: string;
   type: string;
-  url: string | null;
-  description: string | null;
-  category: string | null;
+  url: string;
+  description: string;
+  category: string;
+  created_by: string | null;
   created_at: string;
 }
 
 export interface Problem {
   id: string;
   title: string;
-  difficulty: string;
-  category: string | null;
   description: string;
-  examples: Json;
-  points: number;
-}
-
-export interface ProblemSubmission {
-  id: string;
-  problem_id: string;
-  user_id: string;
-  code: string;
-  language: string;
-  status: string;
-  points_earned: number;
+  difficulty: string;
+  category: string;
   created_at: string;
 }
 
 export interface ForumPost {
   id: string;
-  user_id: string;
   title: string;
   content: string;
-  likes: number | null;
+  user_id: string;
   created_at: string;
   author_name?: string;
   replies?: ForumReply[];
@@ -96,12 +84,113 @@ export interface PeerChallenge {
   problem_id: string;
   bet_amount: number;
   status: string;
-  winner_id: string | null;
   created_at: string;
   challenger_name?: string;
   challenged_name?: string;
   problem_title?: string;
 }
+
+export interface ProblemSubmission {
+  id: string;
+  problem_id: string;
+  user_id: string;
+  code: string;
+  language: string;
+  status: string;
+  points_earned: number;
+  created_at: string;
+}
+
+// Mock data
+const mockEvents: Event[] = [
+  {
+    id: "1",
+    title: "Coding Competition",
+    description: "Annual coding competition",
+    date: "2024-04-15",
+    time: "10:00 AM",
+    venue: "Computer Lab",
+    type: "competition",
+    status: "upcoming",
+    max_participants: 50,
+    created_by: "1",
+    registration_count: 0,
+  },
+  {
+    id: "2",
+    title: "Workshop on React",
+    description: "Learn React fundamentals",
+    date: "2024-04-20",
+    time: "2:00 PM",
+    venue: "Seminar Hall",
+    type: "workshop",
+    status: "upcoming",
+    max_participants: 30,
+    created_by: "1",
+    registration_count: 0,
+  }
+];
+
+const mockAnnouncements: Announcement[] = [
+  {
+    id: "1",
+    title: "Welcome to Geeky Quest Zone",
+    content: "Get ready for exciting coding challenges and events!",
+    priority: "high",
+    created_by: "1",
+    created_at: new Date().toISOString(),
+  }
+];
+
+const mockResources: Resource[] = [
+  {
+    id: "1",
+    title: "JavaScript Guide",
+    type: "document",
+    url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+    description: "Comprehensive JavaScript guide",
+    category: "Programming",
+    created_by: "1",
+    created_at: new Date().toISOString(),
+  }
+];
+
+const mockProblems: Problem[] = [
+  {
+    id: "1",
+    title: "Two Sum",
+    difficulty: "easy",
+    category: "Algorithms",
+    description: "Find two numbers that add up to target",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    title: "Binary Tree Traversal",
+    difficulty: "medium",
+    category: "Data Structures",
+    description: "Traverse a binary tree in-order",
+    created_at: new Date().toISOString(),
+  }
+];
+
+const mockForumPosts: ForumPost[] = [
+  {
+    id: "1",
+    user_id: "1",
+    title: "Best practices for React hooks",
+    content: "Share your tips and tricks for using React hooks effectively.",
+    created_at: new Date().toISOString(),
+    author_name: "Admin User",
+    replies: [],
+  }
+];
+
+const mockChallenges: PeerChallenge[] = [];
+
+const mockSubmissions: ProblemSubmission[] = [];
+
+const mockRegistrations: EventRegistration[] = [];
 
 interface DataContextType {
   events: Event[];
@@ -139,100 +228,49 @@ export const useData = () => {
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const { user, profile, refreshProfiles } = useAuth();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [problems, setProblems] = useState<Problem[]>([]);
-  const [forumPosts, setForumPosts] = useState<ForumPost[]>([]);
-  const [challenges, setChallenges] = useState<PeerChallenge[]>([]);
-  const [submissions, setSubmissions] = useState<ProblemSubmission[]>([]);
-  const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
+  const [events, setEvents] = useState<Event[]>(mockEvents);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
+  const [resources, setResources] = useState<Resource[]>(mockResources);
+  const [problems, setProblems] = useState<Problem[]>(mockProblems);
+  const [forumPosts, setForumPosts] = useState<ForumPost[]>(mockForumPosts);
+  const [challenges, setChallenges] = useState<PeerChallenge[]>(mockChallenges);
+  const [submissions, setSubmissions] = useState<ProblemSubmission[]>(mockSubmissions);
+  const [registrations, setRegistrations] = useState<EventRegistration[]>(mockRegistrations);
   const [loading, setLoading] = useState(true);
 
   const fetchEvents = async () => {
-    const { data } = await supabase.from("events").select("*").order("date", { ascending: false });
-    if (data) {
-      // Get registration counts
-      const eventsWithCounts = await Promise.all(
-        data.map(async (event) => {
-          const { count } = await supabase
-            .from("event_registrations")
-            .select("*", { count: "exact", head: true })
-            .eq("event_id", event.id);
-          return { ...event, registration_count: count || 0 } as Event;
-        })
-      );
-      setEvents(eventsWithCounts);
-    }
+    setEvents(mockEvents);
   };
 
   const fetchAnnouncements = async () => {
-    const { data } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
-    if (data) setAnnouncements(data as Announcement[]);
+    setAnnouncements(mockAnnouncements);
   };
 
   const fetchResources = async () => {
-    const { data } = await supabase.from("resources").select("*").order("created_at", { ascending: false });
-    if (data) setResources(data as Resource[]);
+    setResources(mockResources);
   };
 
   const fetchProblems = async () => {
-    const { data } = await supabase.from("problems").select("*").order("difficulty");
-    if (data) setProblems(data as Problem[]);
+    setProblems(mockProblems);
   };
 
   const fetchForumPosts = async () => {
-    const { data: posts } = await supabase.from("forum_posts").select("*").order("created_at", { ascending: false });
-    if (!posts) return;
-
-    const { data: allProfiles } = await supabase.from("profiles").select("user_id, name");
-    const profileMap = new Map((allProfiles || []).map(p => [p.user_id, p.name]));
-
-    const postsWithReplies = await Promise.all(
-      posts.map(async (post) => {
-        const { data: replies } = await supabase.from("forum_replies").select("*").eq("post_id", post.id).order("created_at");
-        return {
-          ...post,
-          author_name: profileMap.get(post.user_id) || "Unknown",
-          replies: (replies || []).map(r => ({ ...r, author_name: profileMap.get(r.user_id) || "Unknown" })),
-        } as ForumPost;
-      })
-    );
-    setForumPosts(postsWithReplies);
+    setForumPosts(mockForumPosts);
   };
 
   const fetchChallenges = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("peer_challenges")
-      .select("*")
-      .or(`challenger_id.eq.${user.id},challenged_id.eq.${user.id}`)
-      .order("created_at", { ascending: false });
-    if (!data) return;
-
-    const { data: allProfiles } = await supabase.from("profiles").select("user_id, name");
-    const { data: allProblems } = await supabase.from("problems").select("id, title");
-    const profileMap = new Map((allProfiles || []).map(p => [p.user_id, p.name]));
-    const problemMap = new Map((allProblems || []).map(p => [p.id, p.title]));
-
-    setChallenges(data.map(c => ({
-      ...c,
-      challenger_name: profileMap.get(c.challenger_id) || "Unknown",
-      challenged_name: profileMap.get(c.challenged_id) || "Unknown",
-      problem_title: problemMap.get(c.problem_id) || "Unknown",
-    })) as PeerChallenge[]);
+    setChallenges(mockChallenges);
   };
 
   const fetchSubmissions = async () => {
     if (!user) return;
-    const { data } = await supabase.from("problem_submissions").select("*").eq("user_id", user.id);
-    if (data) setSubmissions(data as ProblemSubmission[]);
+    setSubmissions(mockSubmissions);
   };
 
   const fetchRegistrations = async () => {
     if (!user) return;
-    const { data } = await supabase.from("event_registrations").select("*").eq("user_id", user.id);
-    if (data) setRegistrations(data as EventRegistration[]);
+    setRegistrations(mockRegistrations);
   };
 
   const refreshAll = useCallback(async () => {
@@ -254,85 +292,102 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       refreshAll();
     }
-  }, [user]);
-
-  // Real-time subscriptions
-  useEffect(() => {
-    if (!user) return;
-
-    const eventsChannel = supabase.channel("events-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "events" }, () => fetchEvents())
-      .subscribe();
-    const announcementsChannel = supabase.channel("announcements-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "announcements" }, () => fetchAnnouncements())
-      .subscribe();
-    const resourcesChannel = supabase.channel("resources-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "resources" }, () => fetchResources())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(eventsChannel);
-      supabase.removeChannel(announcementsChannel);
-      supabase.removeChannel(resourcesChannel);
-    };
-  }, [user]);
+  }, [user, refreshAll]);
 
   const addEvent = async (e: Omit<Event, "id" | "registration_count">) => {
-    await supabase.from("events").insert({
-      title: e.title,
-      description: e.description,
-      date: e.date,
-      time: e.time,
-      venue: e.venue,
-      type: e.type,
-      status: e.status,
-      max_participants: e.max_participants,
-      created_by: user?.id,
-    });
-    await fetchEvents();
+    const newEvent: Event = {
+      ...e,
+      id: Date.now().toString(),
+      created_by: user?.id || null,
+    };
+    mockEvents.push(newEvent);
+    setEvents([...mockEvents]);
   };
 
   const updateEvent = async (id: string, e: Partial<Event>) => {
-    const { registration_count, ...updateData } = e;
-    await supabase.from("events").update(updateData).eq("id", id);
-    await fetchEvents();
+    const index = mockEvents.findIndex(event => event.id === id);
+    if (index !== -1) {
+      mockEvents[index] = { ...mockEvents[index], ...e };
+      setEvents([...mockEvents]);
+    }
   };
 
   const deleteEvent = async (id: string) => {
-    await supabase.from("events").delete().eq("id", id);
-    await fetchEvents();
+    const index = mockEvents.findIndex(event => event.id === id);
+    if (index !== -1) {
+      mockEvents.splice(index, 1);
+      setEvents([...mockEvents]);
+    }
   };
 
   const addAnnouncement = async (a: { title: string; content: string; priority: string }) => {
-    await supabase.from("announcements").insert({ ...a, created_by: user?.id });
-    await fetchAnnouncements();
+    const newAnnouncement: Announcement = {
+      ...a,
+      id: Date.now().toString(),
+      created_by: user?.id || null,
+      created_at: new Date().toISOString(),
+    };
+    mockAnnouncements.push(newAnnouncement);
+    setAnnouncements([...mockAnnouncements]);
   };
 
   const addResource = async (r: { title: string; type: string; url: string; description: string; category: string }) => {
-    await supabase.from("resources").insert({ ...r, created_by: user?.id });
-    await fetchResources();
+    const newResource: Resource = {
+      ...r,
+      id: Date.now().toString(),
+      created_by: user?.id || null,
+      created_at: new Date().toISOString(),
+    };
+    mockResources.push(newResource);
+    setResources([...mockResources]);
   };
 
   const deleteResource = async (id: string) => {
-    await supabase.from("resources").delete().eq("id", id);
-    await fetchResources();
+    const index = mockResources.findIndex(resource => resource.id === id);
+    if (index !== -1) {
+      mockResources.splice(index, 1);
+      setResources([...mockResources]);
+    }
   };
 
   const addForumPost = async (p: { title: string; content: string }) => {
     if (!user) return;
-    await supabase.from("forum_posts").insert({ ...p, user_id: user.id });
-    await fetchForumPosts();
+    const newPost: ForumPost = {
+      ...p,
+      id: Date.now().toString(),
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      author_name: profile?.name || "Unknown",
+      replies: [],
+    };
+    mockForumPosts.push(newPost);
+    setForumPosts([...mockForumPosts]);
   };
 
   const addReply = async (postId: string, content: string) => {
     if (!user) return;
-    await supabase.from("forum_replies").insert({ post_id: postId, user_id: user.id, content });
-    await fetchForumPosts();
+    const newReply: ForumReply = {
+      id: Date.now().toString(),
+      post_id: postId,
+      user_id: user.id,
+      content,
+      created_at: new Date().toISOString(),
+      author_name: profile?.name || "Unknown",
+    };
+    
+    const postIndex = mockForumPosts.findIndex(post => post.id === postId);
+    if (postIndex !== -1) {
+      if (!mockForumPosts[postIndex].replies) {
+        mockForumPosts[postIndex].replies = [];
+      }
+      mockForumPosts[postIndex].replies!.push(newReply);
+      setForumPosts([...mockForumPosts]);
+    }
   };
 
   const submitSolution = async (problemId: string, code: string, language: string) => {
     if (!user || !profile) return null;
-    const problem = problems.find(p => p.id === problemId);
+    const problem = mockProblems.find(p => p.id === problemId);
     if (!problem) return null;
 
     // Check if already solved
@@ -342,20 +397,23 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const pointsMap: Record<string, number> = { easy: 5, medium: 15, hard: 30 };
     const pointsEarned = pointsMap[problem.difficulty] || 5;
 
-    await supabase.from("problem_submissions").insert({
+    const newSubmission: ProblemSubmission = {
+      id: Date.now().toString(),
       problem_id: problemId,
       user_id: user.id,
       code,
       language,
       status: "accepted",
       points_earned: pointsEarned,
-    });
+      created_at: new Date().toISOString(),
+    };
+    mockSubmissions.push(newSubmission);
+    setSubmissions([...mockSubmissions]);
 
     // Update user points
-    await supabase.from("profiles").update({ points: profile.points + pointsEarned }).eq("user_id", user.id);
+    profile.points += pointsEarned;
+    refreshProfiles();
 
-    await fetchSubmissions();
-    await refreshProfiles();
     return { pointsEarned };
   };
 
@@ -365,7 +423,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     const existing = registrations.find(r => r.event_id === eventId);
     if (existing) return { error: "Already registered" };
 
-    const { error } = await supabase.from("event_registrations").insert({
+    const newRegistration: EventRegistration = {
+      id: Date.now().toString(),
       event_id: eventId,
       user_id: user.id,
       name: formData.name,
@@ -373,11 +432,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       department: formData.department,
       year: formData.year,
       phone: formData.phone,
-    });
+      created_at: new Date().toISOString(),
+    };
+    mockRegistrations.push(newRegistration);
+    setRegistrations([...mockRegistrations]);
 
-    if (error) return { error: error.message };
-    await fetchRegistrations();
-    await fetchEvents();
+    // Update registration count
+    const eventIndex = mockEvents.findIndex(e => e.id === eventId);
+    if (eventIndex !== -1) {
+      mockEvents[eventIndex].registration_count = (mockEvents[eventIndex].registration_count || 0) + 1;
+      setEvents([...mockEvents]);
+    }
+
     return { error: null };
   };
 
@@ -387,38 +453,43 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     if (profile.points < betAmount) return { error: "Insufficient points" };
 
     // Deduct points from challenger
-    await supabase.from("profiles").update({ points: profile.points - betAmount }).eq("user_id", user.id);
+    profile.points -= betAmount;
+    refreshProfiles();
 
-    const { error } = await supabase.from("peer_challenges").insert({
+    const newChallenge: PeerChallenge = {
+      id: Date.now().toString(),
       challenger_id: user.id,
       challenged_id: challengedId,
       problem_id: problemId,
       bet_amount: betAmount,
       status: "pending",
-    });
+      created_at: new Date().toISOString(),
+    };
+    mockChallenges.push(newChallenge);
+    setChallenges([...mockChallenges]);
 
-    if (error) return { error: error.message };
-    await fetchChallenges();
-    await refreshProfiles();
     return { error: null };
   };
 
   const acceptChallenge = async (challengeId: string) => {
     if (!user || !profile) return;
-    const challenge = challenges.find(c => c.id === challengeId);
+    const challenge = mockChallenges.find(c => c.id === challengeId);
     if (!challenge || challenge.challenged_id !== user.id) return;
     if (profile.points < challenge.bet_amount) return;
 
     // Deduct points from challenged
-    await supabase.from("profiles").update({ points: profile.points - challenge.bet_amount }).eq("user_id", user.id);
-    await supabase.from("peer_challenges").update({ status: "accepted" }).eq("id", challengeId);
-    await fetchChallenges();
-    await refreshProfiles();
+    profile.points -= challenge.bet_amount;
+    refreshProfiles();
+
+    const index = mockChallenges.findIndex(c => c.id === challengeId);
+    if (index !== -1) {
+      mockChallenges[index].status = "accepted";
+      setChallenges([...mockChallenges]);
+    }
   };
 
   const getEventRegistrations = async (eventId: string): Promise<EventRegistration[]> => {
-    const { data } = await supabase.from("event_registrations").select("*").eq("event_id", eventId);
-    return (data || []) as EventRegistration[];
+    return mockRegistrations.filter(reg => reg.event_id === eventId);
   };
 
   return (

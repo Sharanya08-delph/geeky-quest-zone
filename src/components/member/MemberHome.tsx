@@ -1,7 +1,7 @@
+import { supabase } from '../supabaseClient'
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useData } from "@/contexts/DataContext";
-import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Flame, Target, Calendar, TrendingUp, AlertTriangle, Clock, Coins, Search } from "lucide-react";
 
@@ -14,44 +14,40 @@ const MemberHome = () => {
   useEffect(() => {
     if (!user) return;
     const updateStreak = async () => {
+      // Temporarily use localStorage until Supabase tables are created
       const today = new Date().toISOString().split("T")[0];
-      const { data } = await supabase
-        .from("daily_streaks")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (!data) {
-        await supabase.from("daily_streaks").insert({
-          user_id: user.id,
-          streak_count: 1,
-          last_active_date: today,
-          longest_streak: 1,
-        });
+      const storedStreak = localStorage.getItem(`streak_${user.id}`);
+      
+      if (!storedStreak) {
+        const newStreak = { streak_count: 1, longest_streak: 1, last_active_date: today };
+        localStorage.setItem(`streak_${user.id}`, JSON.stringify(newStreak));
         setStreak({ streak_count: 1, longest_streak: 1 });
       } else {
-        const lastDate = new Date(data.last_active_date);
+        const streakData = JSON.parse(storedStreak);
+        const lastDate = new Date(streakData.last_active_date);
         const todayDate = new Date(today);
         const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
 
         if (diffDays === 0) {
-          setStreak({ streak_count: data.streak_count, longest_streak: data.longest_streak });
+          setStreak({ streak_count: streakData.streak_count, longest_streak: streakData.longest_streak });
         } else if (diffDays === 1) {
-          const newStreak = data.streak_count + 1;
-          const newLongest = Math.max(newStreak, data.longest_streak);
-          await supabase.from("daily_streaks").update({
-            streak_count: newStreak,
-            last_active_date: today,
-            longest_streak: newLongest,
-          }).eq("user_id", user.id);
+          const newStreak = streakData.streak_count + 1;
+          const newLongest = Math.max(newStreak, streakData.longest_streak);
+          const updatedStreak = { 
+            streak_count: newStreak, 
+            longest_streak: newLongest, 
+            last_active_date: today 
+          };
+          localStorage.setItem(`streak_${user.id}`, JSON.stringify(updatedStreak));
           setStreak({ streak_count: newStreak, longest_streak: newLongest });
         } else {
-          await supabase.from("daily_streaks").update({
-            streak_count: 1,
-            last_active_date: today,
-            longest_streak: data.longest_streak,
-          }).eq("user_id", user.id);
-          setStreak({ streak_count: 1, longest_streak: data.longest_streak });
+          const resetStreak = { 
+            streak_count: 1, 
+            longest_streak: streakData.longest_streak, 
+            last_active_date: today 
+          };
+          localStorage.setItem(`streak_${user.id}`, JSON.stringify(resetStreak));
+          setStreak({ streak_count: 1, longest_streak: streakData.longest_streak });
         }
       }
     };
